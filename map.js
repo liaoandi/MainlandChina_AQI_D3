@@ -23,6 +23,7 @@ d3.json("./data/beijing.json")
 
 
 
+
     function myVis(data1, data2) {
 
         console.log("Start drawing");
@@ -32,36 +33,28 @@ d3.json("./data/beijing.json")
         var height = 800 - margin.top - margin.bottom;
         var padding = 20;
 
-        var formatDateIntoYear = d3.timeFormat("%Y");
-        var startYear = new Date("2014-01-01"), endYear = new Date("2018-12-31");
-
-        var xSelect = d3.scaleTime()
-                        .domain([startYear, endYear])
-                        .range([0. width])
-                        .clamp(true);
-                        
-//         var xScale = d3.scaleLinear()
-//                         .domain([0, d3.max(data, function(d) {
-//                             return d.forest_2014;
-//                             })])
-//                         .range([width - margin.right, margin.left])
-//                         .nice();
+        // var xScale = d3.scaleLinear()
+        //                 .domain([0, d3.max(data, function(d) {
+        //                     return d.forest_2014;
+        //                     })])
+        //                 .range([width - margin.right, margin.left])
+        //                 .nice();
         
-//         var yScale = d3.scaleLinear()
-//                         .domain([30, d3.max(data, function(d) { 
-//                             return d.aqi_2014;
-//                             })])
-//                         .range([margin.top, height - margin.bottom])
-//                         .nice();
+        // var yScale = d3.scaleLinear()
+        //                 .domain([30, d3.max(data, function(d) { 
+        //                     return d.aqi_2014;
+        //                     })])
+        //                 .range([margin.top, height - margin.bottom])
+        //                 .nice();
 
-//         var xAxis = d3.axisTop()
-//                         .scale(xScale)
-//                         .ticks(5);
+        // var xAxis = d3.axisTop()
+        //                 .scale(xScale)
+        //                 .ticks(5);
 
-//         var yAxis = d3.axisRight()
-//                         .scale(yScale)
-//                         .tickValues([30, 60, 90, 120, 150]);
-//                         // .ticks(5);
+        // var yAxis = d3.axisRight()
+        //                 .scale(yScale)
+        //                 .tickValues([30, 60, 90, 120, 150]);
+                        // .ticks(5);
 
         var rScale = d3.scaleLinear()
                         // .domain([60, 110])
@@ -95,10 +88,6 @@ d3.json("./data/beijing.json")
                         // d3.min(data2, function(d) {return d.AQI; }),
                         // d3.max(data2, function(d) {return d.AQI; })
                     // ]);
-        var slider = d3.select("#slider")
-                        .append("svg")
-                        .attr("width", 100)
-                        .attr("height", 100);
 
         for (var i = 0; i < data2.length; i ++ ){
             var dataDistrict = data2[i].district;
@@ -115,6 +104,8 @@ d3.json("./data/beijing.json")
             }
         }
 
+
+        // draw map
         svg.selectAll("path")
             .data(data1.features)
             .enter()
@@ -125,8 +116,6 @@ d3.json("./data/beijing.json")
                 var value = d.properties.value;
 
                 if (value) {
-                    console.log(value);
-                    console.log(d.properties.abb);
                     return color(value);
                 } else {
                     return "#ccc";
@@ -148,8 +137,71 @@ d3.json("./data/beijing.json")
                 // return d.AQI;
                 return rScale(d.AQI);
                 })
-            .attr("class", "circle");
+            .attr("class", "circle")
+            .call(d3.drag()
+                .on("start.interrupt", function() { slider.interrupt(); })
+                .on("start drag", function() { update(x.invert(d3.event.x)); }));
+        
 
+
+        var formatDateIntoYear = d3.timeFormat("%Y");
+        // var formatDate = d3.timeFormat("%Y");
+
+        var startYear = new Date("2014-01-01"),
+            endYear = new Date("2019");
+
+        var svg2 = d3.select("#slider")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height/3);
+            
+        var x = d3.scaleTime()
+            .domain([startYear, endYear])
+            .range([padding + margin.left, width - padding - margin.right])
+            .clamp(true);
+
+        var slider = svg2.append("g")
+            .attr("class", "slider")
+            .attr("transform", "translate(" + (padding + margin.left) + "," + height / 4 + ")");
+
+        slider.append("line")
+            .attr("class", "track")
+            .attr("x1", x.range()[0])
+            .attr("x2", x.range()[1])
+          .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+            .attr("class", "track-inset")
+          .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+            .attr("class", "track-overlay")
+            .call(d3.drag()
+                .on("start.interrupt", function() { slider.interrupt(); })
+                .on("start drag", function() { update(x.invert(d3.event.x)); }));
+
+        slider.insert("g", ".track-overlay")
+            .attr("class", "ticks")
+            .attr("transform", "translate(" + (padding + margin.left) + "," + 20 + ")")
+          .selectAll("text")
+            .data(x.ticks(5))
+            .enter()
+            .append("text")
+            .attr("x", x)
+            .attr("y", 5)
+            .attr("text-anchor", "middle")
+            .attr("class", "label")
+            .text(function(d) { return formatDateIntoYear(d); });
+
+
+        var handle = slider.insert("circle", ".track-overlay")
+            .attr("class", "handle")
+            .attr("cx", x.range()[0])
+            .attr("r", 8);
+
+        function update(h) {
+          handle.attr("cx", x(h));
+          var slideYear = formatDateIntoYear(h);
+          if (slideYear != 2013){
+            console.log(slideYear);
+          }  
+        }
 
 //         // draw labels
 //         svg.selectAll("text")
