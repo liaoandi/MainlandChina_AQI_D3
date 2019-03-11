@@ -4,6 +4,22 @@ Link: https://liaoandi.github.io/MainlandChina_AQI_D3/
 
 Progress records & Questions:
 
+-- 20190310
+
+- Solved all the problems from last week.
+
+- Finished the slider + map interaction.
+
+- Working on running circles part.
+
+- Fixing the "magic time" button: it should clear the slider and the map, and bring the running circles to the front.
+
+1) How to let every circle runs to its own category on the right side? And how to let one circle move at a time?
+
+2) CSS selectors. How to select circles from the map but excluding the circles from the scatterplot? 
+
+
+
 -- 20190303
 
 1) How to let a svg start at a new place(e.g. under the map)? 
