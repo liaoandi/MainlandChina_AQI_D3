@@ -6,18 +6,31 @@
           }
           .axis text {
               font-family: Georgia;
+              font-size: 12px;
+          }
+
+          .slideraxis {
+              font-family: Georgia;
               font-size: 0px;
           }
-          .circle{
+
+          .circleStation {
               fill: #EC96A4;
               opacity: 0.8;                  
           }
+
+          .circle {
+              fill: #EC96A4;
+              opacity: 0.8;                  
+          }
+
           .title {
               font-family: Georgia;
               font-size: 24px;
               font-weight: bold;
               fill: #696969;
           }
+
           .subtitle {
               font-family: Georgia;
               font-size: 14px;
@@ -28,16 +41,19 @@
               font-size: 12px;
               fill: #929292;
           }
+
           .label {
               font-family: Georgia;
               font-size: 10px;
               fill: #929292;
           }
+
           .legend text {
               font-family: Georgia;
               font-size: 8px;
               fill: #929292;
           }
+
           .map {
               fill: #92AAC7; 
           }
@@ -74,9 +90,6 @@
           }
 
           .svg {
-  /*          background-color: #696969;*/
-            /*margin-right: 10px;*/
-            /*margin-bottom: 10px;*/
               display: block;
           }
 

@@ -1,12 +1,12 @@
 // read in data
-var files = ["./data/beijing.json", "./data/district.json", "./data/station.json", "./data/polluant.json"];
+var files = ["./data/beijing.json", "./data/district.json", "./data/station.json", "./data/time.json"];
 
 Promise.all(files.map(url => d3.json(url))).then(function(data) {
     myVis(data[0], data[1].map(d => d[0]), data[2].map(d => d[0]), data[3].map(d => d[0]));
 });
 
 
-function myVis(beijing, district, station, polluant) {
+function myVis(beijing, district, station, time) {
 
     console.log("Start drawing");
 
@@ -35,19 +35,20 @@ function myVis(beijing, district, station, polluant) {
                 .clamp(true);
 
     // draw ticks 
-    var xAxis = d3.axisBottom()
-                    .scale(x)
-                    .ticks(5);
+    var sliderAxis = d3.axisBottom()
+                        .scale(x)
+                        .ticks(5);
 
     svg0.append("g")
-        .attr("class", "axis")
-        .attr("transform", "translate(" + margin.left + ", " + (height / 2 - 50)  + ")")
-        .call(xAxis);
+            .attr("class", "slideraxis")
+            .attr("transform", "translate(" + margin.left + ", " + (height / 2 - 50)  + ")")
+            .attr("id", "sliderAxis")
+            .call(sliderAxis);
 
     // draw actual slider 
     var slider = svg0.append("g")
-        .attr("class", "slider")
-        .attr("transform", "translate(" + margin.left + "," + (height / 2 - 50) + ")");
+                        .attr("class", "slider")
+                        .attr("transform", "translate(" + margin.left + "," + (height / 2 - 50) + ")");
 
     slider.append("line")
             .attr("class", "track")
@@ -75,9 +76,9 @@ function myVis(beijing, district, station, polluant) {
 
     // draw handle and slider labels
     var handle = slider.insert("circle", ".track-overlay")
-                        .attr("class", "handle")
-                        .attr("cx", x.range()[0])
-                        .attr("r", 6);
+                            .attr("class", "handle")
+                            .attr("cx", x.range()[0])
+                            .attr("r", 6);
 
     var sliderLabel = slider.append("text")
                                 .attr("class", "label")
@@ -105,7 +106,7 @@ function myVis(beijing, district, station, polluant) {
     var svg1 = d3.select("body")
                     .append("svg")
                     .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
+                    .attr("height", height)
                     .attr("transform", "translate(" + 0 + "," + 0 + ")");
 
     var projection = d3.geoMercator()
@@ -126,6 +127,23 @@ function myVis(beijing, district, station, polluant) {
                     //             d3.min(district, function(d) {return d.value; }),
                     //             d3.max(district, function(d) {return d.value; })
                     // ]);
+
+    // initialize map
+    var initpath = svg1.selectAll("path")
+            .data(beijing.features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("class", "map")
+            .style("fill", function(d) {
+                var value = d.properties.value;
+                if (value) {
+                    return color(value);
+                } else {
+                    return "#F1F2F3";
+                }
+            });
+
 
     var div = d3.select("body")
                     .append("div")
@@ -149,7 +167,6 @@ function myVis(beijing, district, station, polluant) {
             var dataDistrict = subset[i].district;
             var dataValue = subset[i].value;
             mapMap[dataDistrict] = dataValue;
-
         }
 
         for (var j = 0; j < beijing.features.length; j ++ ) {
@@ -196,7 +213,7 @@ function myVis(beijing, district, station, polluant) {
                         .style("stroke", "none")
                         .style("fill", function(d){
                            return color(d.properties.value);
-                        })
+                    })
                 });
 
 
@@ -222,7 +239,7 @@ function myVis(beijing, district, station, polluant) {
                 .attr("r", function(d) {
                     return rScale(d.value);
                 })
-                .attr("class", "circle")
+                .attr("class", "circleStation")
                 .on("mouseover", function(d) {
                     div.transition()
                         .duration(100)
@@ -239,7 +256,115 @@ function myVis(beijing, district, station, polluant) {
                         .style("opacity", 0);
                 });
 
+        // add button
+        var button = svg0.selectAll("button")
+                            .data(time)
+                            .enter()
+                            .append("g")
+                            .append("text")
+                            .attr("x", margin.left + padding)
+                            .attr("y", margin.top  + 50)
+                            .attr("class", "label")
+                            .text("Magic Time!")
+                            .on("click", function(){
+                                d3.select(".slider")
+                                    .transition()
+                                    .duration(200)
+                                    .style("opacity", 0);
+                                d3.select(".sliderAxis")
+                                    .transition()
+                                    .duration(200)
+                                    .style("opacity", 0);
+                                d3.selectAll("path")
+                                    .transition()
+                                    .duration(200)
+                                    .style("opacity", 0);
+                                d3.selectAll(".circleStation")
+                                    .transition()
+                                    .duration(200)
+                                    .style("opacity", 0);
+                            });
     }
+
+
+    var parser = d3.timeParse("%Y%m%d");
+    // console.log(formatDate(parser("20140101")));
+
+    time.forEach(function(d) {
+        d.date = parser(d.date);
+
+        // console.log(d.date);
+    });
+
+
+    var yScale = d3.scaleTime()
+                    .domain([d3.min(time, function(d) { 
+                                return d.date;
+                            }), 
+                            d3.max(time, function(d) {
+                            // console.log(parseTime(d.date))
+                                return d.date;
+                            })])
+                    .range([margin.top, height - margin.bottom])
+                    .nice();
+
+    console.log(time);
+    var destScale = d3.scaleOrdinal()
+                        // .domain([d3.min(time, function(d) {
+                        //             return d.value;
+                        //         }),
+                        //         d3.max(time, function(d) {
+                        //             return d.value;
+                        //         })])
+                        .domain(["good", "fair", "unhealthy", "dangerous"])
+                        .range([100, 200, 300, 400]);
+
+    var yAxis0 = d3.axisRight()
+                    .scale(yScale)
+                    .ticks(5);
+
+    var yAxis1 = d3.axisLeft()
+                    .scale(destScale)
+                    .tickValues(["good", "fair", "unhealthy", "dangerous"]);
+
+
+    // draw y axis and label
+    svg1.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + (margin.left * 5) +  ", 0)")
+            .call(yAxis0);
+
+    svg1.selectAll("circle")
+            .data(time)
+            .enter()
+            .append("circle")
+            .attr("cx", margin.left * 5)
+            .attr("cy", function(d) {
+                return yScale(d.date);
+                })
+            .attr("r", 5)
+            .attr("class", "circle")
+            .each(running);
+
+    svg1.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + (width * 0.9) +  ", 0)")
+            .call(yAxis1);
+
+    // ref: http://bl.ocks.org/nbremer/b6cd1c9973eb24caa7cabb3437b0a248
+    //the circle runs from left to right
+    function running(d) {
+        var circle = d3.select(this);
+        var element = d;
+
+        //Move the circle left and right
+        // https://bl.ocks.org/Kcnarf/9e4813ba03ef34beac6e
+        circle = circle.transition()
+                    .duration(2000)
+                    .attr("cx", width * 0.9)
+                    .style("fill", "#4C3F54")
+    };
+    
 
     // var svg2 = d3.select("body")
     //             .append("svg")
@@ -249,20 +374,20 @@ function myVis(beijing, district, station, polluant) {
 
     // svg2.append("text")
     //     .attr("x", margin.left + padding)
-    //     .attr("y", margin.top / 4)
+    //     .attr("y", padding)
     //     .attr("class", "title")
-    //     .text("This silder is still under construction!!! The values are not updated as expected.");
+    //     .text("This running plot is under construction!!! ");
 
-
-
-
-    // var svg2 = d3.select("body").append("svg")
-    // .attr("width", width + margin.left + margin.right)
-    // .attr("height", height + margin.top + margin.bottom)
-    // .append("g")
-    // .attr("transform",
-    // "translate(" + margin.left + "," + margin.top + ")");
-
+    // svg2.append("g")
+    //     .attr("class", "axis")
+    //     .attr("transform", "translate(" + (width - margin.right + margin.left * 2) + ", 0)")
+    //     .call(yAxis1)
+    // .append("text")
+    //     .attr("transform", "rotate(90)")
+    //     .attr("x", height / 2)
+    //     .attr("y", 0)
+    //     .style("text-anchor", "middle")
+    //     .text("Air Quality Index");
 
     // // add data sourcing
     // svg.append("text")
