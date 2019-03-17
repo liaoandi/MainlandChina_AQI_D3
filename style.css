@@ -1,15 +1,32 @@
 <style type = "text/css">
-          .axis path,
+/*          .axis line {
+              stroke: #929292;
+              shape-rendering: crispEdges;
+          }*/
+          .axis path {
+              stroke: #929292;
+          }
+
           .axis line {
               stroke: #929292;
               shape-rendering: crispEdges;
           }
-          .axis text {
-              font-family: Georgia;
-              font-size: 12px;
+
+          .axis path {
+              stroke: #929292;
           }
 
-          .slideraxis {
+          .axis text {
+              fill: #929292;
+              font-family: Georgia;
+              font-size: 10px;
+          }
+
+          .slideraxis line{
+              stroke: #929292;
+          }
+
+          .slideraxis text {
               font-family: Georgia;
               font-size: 0px;
           }
@@ -50,7 +67,7 @@
 
           .legend text {
               font-family: Georgia;
-              font-size: 8px;
+              font-size: 12px;
               fill: #929292;
           }
 
@@ -92,6 +109,22 @@
           .svg {
               display: block;
           }
+
+          div.tooltip0 {
+              position: absolute;
+              text-align: center;
+              width: 90px;
+              height: 30px;
+              padding: 2px;
+              font-family: Georgia;
+              font-size: 12px;
+              fill: #696969;
+              background: #FFFFFF;
+              border-width: 0.5px;
+              border-style: solid;
+              border-color: #000000;
+              pointer-events: none;
+            }
 
           div.tooltip {
               position: absolute;
