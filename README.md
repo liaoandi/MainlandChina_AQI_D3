@@ -4,6 +4,22 @@ Link: https://liaoandi.github.io/MainlandChina_AQI_D3/
 
 Progress records & Questions:
 
+-- 20190317
+
+- Added the histogram, together with tooltip and syncing with slider.
+
+- Fixed bug in the map interaction and initialization.
+
+- Made the running plot running!
+
+- Added the button for switching between plots.
+
+1) How to made svg elements switch positions?
+
+2) How to sync plots outside different functions?
+
+
+
 -- 20190310
 
 - Solved all the problems from last week.
@@ -17,6 +33,7 @@ Progress records & Questions:
 1) How to let every circle runs to its own category on the right side? And how to let one circle move at a time?
 
 2) CSS selectors. How to select circles from the map but excluding the circles from the scatterplot? 
+
 
 
 
