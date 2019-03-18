@@ -1,145 +1,162 @@
 <style type = "text/css">
-/*          .axis line {
-              stroke: #929292;
-              shape-rendering: crispEdges;
-          }*/
-          .axis path {
-              stroke: #929292;
-          }
 
-          .axis line {
-              stroke: #929292;
-              shape-rendering: crispEdges;
-          }
+      .axis path {
+          stroke: #929292;
+      }
 
-          .axis path {
-              stroke: #929292;
-          }
+      .axis line {
+          stroke: #929292;
+          shape-rendering: crispEdges;
+      }
 
-          .axis text {
-              fill: #929292;
-              font-family: Georgia;
-              font-size: 10px;
-          }
+      .axis path {
+          stroke: #929292;
+      }
 
-          .slideraxis line{
-              stroke: #929292;
-          }
+      .axis text {
+          fill: #929292;
+          font-family: Georgia;
+          font-size: 10px;
+      }
 
-          .slideraxis text {
-              font-family: Georgia;
-              font-size: 0px;
-          }
+      .slideraxis line{
+          stroke: #929292;
+      }
 
-          .circleStation {
-              fill: #EC96A4;
-              opacity: 0.8;                  
-          }
+      .slideraxis text {
+          font-family: Georgia;
+          font-size: 0px;
+      }
 
-          .circle {
-              fill: #EC96A4;
-              opacity: 0.8;                  
-          }
+      .circleStation {
+          fill: #EC96A4;                
+      }
 
-          .title {
-              font-family: Georgia;
-              font-size: 24px;
-              font-weight: bold;
-              fill: #696969;
-          }
+      .circle {
+          fill: #EC96A4;             
+      }
 
-          .subtitle {
-              font-family: Georgia;
-              font-size: 14px;
-              fill: #696969;
-          }
-          .source{
-              font-family: Georgia;
-              font-size: 12px;
-              fill: #929292;
-          }
+      .title {
+          font-family: Georgia;
+          font-size: 24px;
+          font-weight: bold;
+          fill: #696969;
+      }
 
-          .label {
-              font-family: Georgia;
-              font-size: 10px;
-              fill: #929292;
-          }
+      .subtitle {
+          font-family: Georgia;
+          font-size: 14px;
+          fill: #696969;
+      }
 
-          .legend text {
-              font-family: Georgia;
-              font-size: 12px;
-              fill: #929292;
-          }
+      .source{
+          font-family: Georgia;
+          font-size: 12px;
+          fill: #929292;
+      }
 
-          .map {
-              fill: #92AAC7; 
-          }
+      .label {
+          font-family: Georgia;
+          font-size: 10px;
+          fill: #929292;
+      }
 
-          .track,
-          .track-inset,
-          .track-overlay {
-            stroke-linecap: round;
-          }
+      .legend text {
+          font-family: Georgia;
+          font-size: 12px;
+          fill: #929292;
+      }
 
-          .track {
-            stroke: #000;
-            stroke-opacity: 0.3;
-            stroke-width: 6px;
-          }
+      .map {
+          fill: #92AAC7; 
+      }
 
-          .track-inset {
-            stroke: #ddd;
-            stroke-width: 6px;
-          }
+      .track,
+      .track-inset,
+      .track-overlay {
+          stroke-linecap: round;
+      }
 
-          .track-overlay {
-            pointer-events: stroke;
-            stroke-width: 6px;
-            stroke: transparent;
-            cursor: crosshair;
-          }
+      .track {
+          stroke: #000;
+          stroke-opacity: 0.3;
+          stroke-width: 6px;
+      }
 
-          .handle {
-            fill: #fff;
-            stroke: #000;
-            stroke-opacity: 0.5;
-            stroke-width: 1px;
-          }
+      .track-inset {
+          stroke: #ddd;
+          stroke-width: 6px;
+      }
 
-          .svg {
-              display: block;
-          }
+      .track-overlay {
+          pointer-events: stroke;
+          stroke-width: 6px;
+          stroke: transparent;
+          cursor: crosshair;
+      }
 
-          div.tooltip0 {
-              position: absolute;
-              text-align: center;
-              width: 90px;
-              height: 30px;
-              padding: 2px;
-              font-family: Georgia;
-              font-size: 12px;
-              fill: #696969;
-              background: #FFFFFF;
-              border-width: 0.5px;
-              border-style: solid;
-              border-color: #000000;
-              pointer-events: none;
-            }
+      .handle {
+          fill: #fff;
+          stroke: #000;
+          stroke-opacity: 0.5;
+          stroke-width: 1px;
+      }
 
-          div.tooltip {
-              position: absolute;
-              text-align: center;
-              width: 120px;
-              height: 50px;
-              padding: 2px;
-              font-family: Georgia;
-              font-size: 14px;
-              fill: #696969;
-              background: #FFFFFF;
-              border-width: 0.5px;
-              border-style: solid;
-              border-color: #000000;
-              pointer-events: none;
-            }
+      .svg {
+          display: block;
+      }
+
+      div.tooltip0 {
+          position: absolute;
+          text-align: center;
+          width: 90px;
+          height: 30px;
+          padding: 2px;
+          font-family: Georgia;
+          font-size: 12px;
+          fill: #696969;
+          background: #FFFFFF;
+          border-width: 0.5px;
+          border-style: solid;
+          border-color: #000000;
+          pointer-events: none;
+        }
+
+      div.tooltip1 {
+          position: absolute;
+          text-align: center;
+          width: 120px;
+          height: 50px;
+          padding: 2px;
+          font-family: Georgia;
+          font-size: 14px;
+          fill: #696969;
+          background: #FFFFFF;
+          border-width: 0.5px;
+          border-style: solid;
+          border-color: #000000;
+          pointer-events: none;
+        }
+
+      button {
+          position: absolute;
+          top: 50px;
+          left: 1000px;
+          background: #EC96A4;
+          padding-right: 26px;
+          border-radius: 0px;
+          border: none;
+          color: white;
+          margin: 0;
+          padding: 0 10px;
+          width: 60px;
+          cursor: pointer;
+          height: 30px;
+          font-family: Georgia;
+      }
+
+      button:hover {
+          background-color: #696969;
+      }   
 
 </style>

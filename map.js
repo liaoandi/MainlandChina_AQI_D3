@@ -36,6 +36,15 @@ function myVis(beijing, daily, district, station, time) {
         d.date = parser(d.date);
     });
 
+    var counter = 0
+
+    time.forEach(function(d) {
+        d.date = parser(d.date);
+        d.id = counter;
+        counter += 1;
+    });
+
+
     var color = d3.scaleQuantize()
                     .domain([50, 200])
                     // .range(["#92AAC7", "#A1BE95", "#E2DFA2", "ED5752"]);
@@ -230,7 +239,7 @@ function myVis(beijing, daily, district, station, time) {
             .attr("x", 20)
             .attr("y", 75)
             .attr("class", "label")
-            .text("Monthly Average AQI");
+            .text("Monthly AQI");
     }
 
 
@@ -238,17 +247,19 @@ function myVis(beijing, daily, district, station, time) {
                     .append("svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height)
-                    .attr("transform", "translate(" + 0 + "," + (-80    ) + ")");
+                    .attr("transform", "translate(" + 0 + "," + (-80    ) + ")")
+                    .attr("id","id_1");;
 
     // add legends
     function addlegend() {
 
         var legendVals = ["Daily AQI Range",  
                             "0-50", "50-150", "150-250", "250-500", ">500",
-                            "Observation Station"]
+                            "Observation Station"];
+
         var legendCols = ["#FFFFFF", 
                             "#f1eef6", "#bdc9e1", "#74a9cf", "#0570b0", "#005073",
-                            "#EC96A4"]
+                            "#EC96A4"];
 
         var legend = svg1.selectAll(".legend")
                             .data(legendVals)
@@ -295,11 +306,14 @@ function myVis(beijing, daily, district, station, time) {
 
     var div1 = d3.select("body")
                     .append("div")
-                    .attr("class", "tooltip")
+                    .attr("class", "tooltip1")
                     .style("opacity", 0);
 
 
-    function drawmap(h) {
+    function drawmap(h, show) {
+        // if (show === false) {
+        //     svg1.attr("opacity", 0);
+        // }
 
         var subset = district.filter((row) => row.date === +h);
         
@@ -365,10 +379,10 @@ function myVis(beijing, daily, district, station, time) {
         var subset = station.filter((row) => row.date === +h);
 
         var update1 = svg1.selectAll("circle")
-                .data(subset);
+                             .data(subset);
 
         var enter1 = update1.enter()
-                .append("circle");
+                             .append("circle");
 
         var exit1 = update1.exit();
 
@@ -418,236 +432,124 @@ function myVis(beijing, daily, district, station, time) {
         handle.attr("cx", x(h));
         sliderLabel.attr("x", x(h))
                     .text(formatDateDisplay(h));
-        drawmap(formatDate(h));
+        drawmap(formatDate(h), true);
         drawhist(h);
     }
 
-    // initialize everything
-    addlegend(); 
-    drawmap(formatDate(startDate));
-    drawhist(startDate);
 
+    // var yScale = d3.scaleTime()
+    //                 .domain([
+    //                         d3.min(time, function(d) { return d.date; }), 
+    //                         d3.max(time, function(d) {return d.date;})])
+    //                 .range([margin.top, height - margin.bottom])
+    //                 .nice();
 
-
-    // console.log(formatDate(parser("20140101")));
-    var counter = 0
-    time.forEach(function(d) {
-        d.date = parser(d.date);
-        d.id = counter;
-        counter += 1;
-    });
-    console.log(time);
-
-    var yScale = d3.scaleTime()
-                    .domain([
-                            d3.min(time, function(d) { return d.date; }), 
-                            d3.max(time, function(d) {return d.date;})])
-                    .range([margin.top, height - margin.bottom])
-                    .nice();
-
-    var destScale = d3.scaleOrdinal()
-                        .domain(["good", "fair", "unhealthy", "dangerous"])
-                        .range([100, 200, 300, 400]);
-
-    var yAxis0 = d3.axisRight()
-                    .scale(yScale)
-                    .ticks(5);
-
-    var yAxis1 = d3.axisLeft()
-                    .scale(destScale)
-                    .tickValues(["good", "fair", "unhealthy", "dangerous"]);
+    // var yAxis0 = d3.axisRight()
+    //                 .scale(yScale)
+    //                 .ticks(5);
 
     var svg2 = d3.select("body")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("transform", "translate(" + 0 + "," + (-200) + ")");
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .attr("transform", "translate(" + 0 + "," + (-550) + ")")
+                    .attr("id","id_2");
 
-    // draw y axis and label
-    svg2.append("g")
-            .attr("class", "axis")
-            .attr("transform", "translate(" + (width * 0.1) +  ", 0)")
-            .call(yAxis0);
+    function drawrunning(show) {
 
-    svg2.append("g")
-            .attr("class", "axis")
-            .attr("transform", "translate(" + (width * 0.9) +  ", 0)")
-            .call(yAxis1);
-
-    // svg2.selectAll("circle")
-    //         .data(time)
-    //         .enter()
-    //         .append("circle")
-    //         .attr("cx", margin.left * 5)
-    //         .attr("cy", function(d) {
-    //             return yScale(d.date);
-    //             })
-    //         .attr("r", 5)
-    //         .attr("class", "circle")
-    //         .attr("id", function(d, idx){
-    //             console.log(idx +'-point')
-    //             return idx +'-point';
-
-    //         });
-            // .each(running);
+        var yScale = d3.scaleOrdinal()
+                            .domain(["good", "fair", "unhealthy", "dangerous"])
+                            .range([margin.left + 0.05 * width, margin.left + 0.3 * width, 
+                                    margin.left + 0.55 * width, margin.left + 0.8 * width]);
 
 
-    // let counter = 0;
-    var counter = 0 
-    // setInterval(function(){
-    //         // var data = useData.map(function(d){return Math.random()})  
-    //         //   console.log(data[0]);   
-    //         // console.log(counter);   
-    //         // if (counter === 1000){
-    //         //     break;
-    //         // }          
-    //         running(counter);
-    //         counter +=1
-    //         }, 500)
+        var yAxis = d3.axisBottom()
+                        .scale(yScale)
+                        .tickValues(["good", "fair", "unhealthy", "dangerous"]);
 
-    // ref: http://bl.ocks.org/nbremer/b6cd1c9973eb24caa7cabb3437b0a248
-    //the circle runs from left to right
-    function running(d) {
-        console.log(d)
-        var subset = time.filter((row) => row.id === +d);
-        // console.log(subset);
-        // var circle = d3.select(this);
-        // var element = d;
-        // var circle = d3.select"(pointid + " "-point)";
-        // console.log("(pointid + " + "-point")；
-        //Move the circle left and right
-        // https://bl.ocks.org/Kcnarf/9e4813ba03ef34beac6e
-        // svg2.selectAll("circle")
-        //     .data(subset)
-        //     .enter()
-        //     .append("circle")
-        //     .attr("cx", margin.left * 5)
-        //     .attr("cy", function(d) {
-        //         console.log("!!!")
-        //         return yScale(d.date);
-        //         })
-        //     .attr("r", 5)
-        //     .attr("class", "circle")
-        //     .transition()
-        //                 .ease(d3.easeLinear)
-        //                 .duration(200)
-        //                 .attr("cx", width * 0.9)
-        //                 .attr("cy", function(d){
-        //                     if (d.category === "good"){ return 100}
-        //                     if (d.category === "fair"){ return 200}
-        //                     if (d.category === "unhealthy"){ return 300}
-        //                     if (d.category === "dangerous"){ return 400}
-        //                 })
-        //                 .style("fill", function(d){
-        //                     if (d.category === "good"){ return "#486824"}
-        //                     if (d.category === "fair"){ return "#F2C057"}
-        //                     if (d.category === "unhealthy"){ return "#D13525"}
-        //                     if (d.category === "dangerous"){ return "#4C3F54"}
-        //                 });
+        var y = svg2.append("g")
+                        .attr("class", "axis")
+                        .attr("transform", "translate(" + 0 + "," + 300 + ")")
+                        .call(yAxis);
 
-        var update2 = svg2.selectAll("circle")
-                .data(subset);
+        allCircles = svg2.selectAll("circle")
+                            .data(time)
+                            .enter()
+                            .append("circle")
+                            .attr("cx", function(d) {
+                                return (margin.left + x(d.date));
+                            })
+                            .attr("cy", 10)
+                            .attr("r", 5)
+                            .attr("class", "circle")
+                            .each(running);
 
-        var enter2 = update2.enter()
-                .append("circle");
+        // ref: https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763
+        function running (d, i) {
 
-        var exit2 = update2.exit();
-
-        exit2.remove();
-        update2.merge(enter2)
-                .attr("cx", margin.left * 5)
-                .attr("cy", function(d) {
-                    return yScale(d.date);
+            d3.select(this)
+                .transition()
+                .delay(i * 1)
+                .duration(200)
+                .ease(d3.easeElasticOut)
+                .attr("cy", 10)
+                .attr("cx", function(d) {
+                    return (margin.left + x(d.date));
                     })
                 .attr("r", 5)
                 .attr("class", "circle")
-                .text(function(d){return d.date})
+                .text(function(d) {
+                        return d.date
+                    })
                 .transition()
-                        .ease(d3.easeLinear)
-                        .duration(500)
-                        .attr("cx", width * 0.9)
-                        .attr("cy", function(d){
-                            if (d.category === "good"){ return 100}
-                            if (d.category === "fair"){ return 200}
-                            if (d.category === "unhealthy"){ return 300}
-                            if (d.category === "dangerous"){ return 400}
-                        })
-                        .style("fill", function(d){
-                            if (d.category === "good"){ return "#486824"}
-                            if (d.category === "fair"){ return "#F2C057"}
-                            if (d.category === "unhealthy"){ return "#D13525"}
-                            if (d.category === "dangerous"){ return "#4C3F54"}
-                        });
-
-        // svg2.append("text")
-        //     .data(subset)
-        //     .enter()
-        //     .attr("x", margin.left + padding)
-        //     .attr("y", margin.top * 4)
-        //     .attr("class", "title")
-        //     .text(function(d){console.log("!!!",d); return d.date});
-        
-        // circle = circle.transition()
-        //                 .ease(d3.easeLinear)
-        //                 .duration(5000)
-        //                 .attr("cx", width * 0.9)
-        //                 .attr("cy", function(d){
-        //                     if (d.category === "good"){ return 100}
-        //                     if (d.category === "fair"){ return 200}
-        //                     if (d.category === "unhealthy"){ return 300}
-        //                     if (d.category === "dangerous"){ return 400}
-        //                 })
-        //                 .style("fill", function(d){
-        //                     if (d.category === "good"){ return "#486824"}
-        //                     if (d.category === "fair"){ return "#F2C057"}
-        //                     if (d.category === "unhealthy"){ return "#D13525"}
-        //                     if (d.category === "dangerous"){ return "#4C3F54"}
-        //                 });
-
-
-        // function updatepoint(pointid) {
-        //     select +'(pointid +' '-point'
-        //     .attr("cx", width * 0.9)
-        //     .transition(500)
-        //                             .attr("cy", function(d){
-        //                     if (d.category === "good"){ return 100}
-        //                     if (d.category === "fair"){ return 200}
-        //                     if (d.category === "unhealthy"){ return 300}
-        //                     if (d.category === "dangerous"){ return 400}
-        //                 })
-        //                 .style("fill", function(d){
-        //                     if (d.category === "good"){ return "#486824"}
-        //                     if (d.category === "fair"){ return "#F2C057"}
-        //                     if (d.category === "unhealthy"){ return "#D13525"}
-        //                     if (d.category === "dangerous"){ return "#4C3F54"}
-        //                 });
-        // }
-        // updatepoint();
+                    .ease(d3.easeLinear)
+                    .duration(1000)
+                    .attr("cx", function(d) {
+                        if (d.category === "good"){ return yScale.range()[0] + i * 0.1 }
+                        if (d.category === "fair"){ return yScale.range()[1] + i * 0.1}
+                        if (d.category === "unhealthy"){ return yScale.range()[2] + i * 0.1 }
+                        if (d.category === "dangerous"){ return yScale.range()[3] + i * 0.1 }
+                        else { return yScale.range()[0] + i * 0.1 }
+                    })
+                    .attr("cy", 300)
+                    .style("fill", function(d) {
+                        if (d.category === "good"){ return "#486824" }
+                        if (d.category === "fair"){ return "#F2C057" }
+                        if (d.category === "unhealthy"){ return "#D13525" }
+                        if (d.category === "dangerous"){ return "#4C3F54" }
+                        else { return "#486824" }
+                    });
+            }
     }
-    
 
+    // initialize everything
+    // addlegend(); 
+    // drawmap(formatDate(startDate), true);
+    drawhist(startDate);
 
-    // svg2.append("text")
-    //     .attr("x", margin.left + padding)
-    //     .attr("y", padding)
-    //     .attr("class", "title")
-    //     .text("This running plot is under construction!!! ");
+    var playButton = d3.select("body")
+                            .append("button")
+                            .text("Play")
+                            .attr("class", "button")
+                            .on("click", function(){
+                                var button = d3.select(this);
+                                if (button.text() === "Play") {
+                                    d3.select(this)
+                                        .style("background-color", "#ccc")
+                                        .text("Return");   
+                                    // d3.select("#id_1").remove();          
+                                    // drawmap(formatDate(startDate), false);
+                                    drawrunning(true);
+                                } else {
+                                    d3.select(this)
+                                        .style("background-color", "#EC96A4")
+                                        .text("None");
+                                    d3.select("#id_2").remove(); 
+                                    // drawrunning(false);
+                                    addlegend(); 
+                                    drawmap(formatDate(startDate), true);
+                                    
+                                }
+                            });
 
-    // svg2.append("g")
-    //     .attr("class", "axis")
-    //     .attr("transform", "translate(" + (width - margin.right + margin.left * 2) + ", 0)")
-    //     .call(yAxis1)
-    // .append("text")
-    //     .attr("transform", "rotate(90)")
-    //     .attr("x", height / 2)
-    //     .attr("y", 0)
-    //     .style("text-anchor", "middle")
-    //     .text("Air Quality Index");
-
-    // // add data sourcing
-    // svg.append("text")
-    //     .attr("x", width - margin.right * 12)
-    //     .attr("y", height - margin.bottom * 2)
-    //     .attr("class", "source")
-    //     .text("National Urban Air Quality in Real-Time Publishing Platform");
 }
