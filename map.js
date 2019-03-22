@@ -2,22 +2,23 @@
 var files = ["./data/beijing.json", 
                 "./data/daily.json", 
                 "./data/district.json", 
+                "./data/districtReady.json", 
                 "./data/station.json", 
                 "./data/time.json"];
+
 
 Promise.all(files.map(url => d3.json(url))).then(function(data) {
     myVis(data[0], 
             data[1].map(d => d[0]), 
             data[2].map(d => d[0]), 
             data[3].map(d => d[0]), 
-            data[4].map(d => d[0])
+            data[4].map(d => d[0]),
+            data[5].map(d => d[0]) 
     );
 });
 
 
-function myVis(beijing, daily, district, station, time) {
-
-    console.log("Start drawing");
+function myVis(beijing, daily, district, districtReady, station, time) {
 
     var margin = {top: 80, bottom: 50, left: 30, right: 30}
     var width = 1200 - margin.left - margin.right;
@@ -32,34 +33,25 @@ function myVis(beijing, daily, district, station, time) {
     var formatDecimal = d3.format(".2f");
     var parser = d3.timeParse("%Y%m%d");
 
+    // modify date
     daily.forEach(function(d) {
         d.date = parser(d.date);
     });
 
-    var counter = 0
-
-    time.forEach(function(d) {
+    districtReady.forEach(function(d) {
         d.date = parser(d.date);
-        d.id = counter;
-        counter += 1;
     });
 
+    var now_t = "cyq";
 
     var color = d3.scaleQuantize()
                     .domain([50, 200])
-                    // .range(["#92AAC7", "#A1BE95", "#E2DFA2", "ED5752"]);
-                    // .range(["#486824", "#F2C057", "#D13525", "#4C3F54"]);
                     .range(["#f1eef6", "#bdc9e1", "#74a9cf", "#0570b0", "#005073"]);
-                    // .domain([ 
-                    //             d3.min(district, function(d) {return d.value; }),
-                    //             d3.max(district, function(d) {return d.value; })
-                    // ]);
 
     var x = d3.scaleTime()
                 .domain([startDate, endDate])
                 .range([margin.left, width - margin.right])
                 .clamp(true);
-
 
     var svg0 = d3.select("body")
                     .append("svg")
@@ -138,32 +130,45 @@ function myVis(beijing, daily, district, station, time) {
             .attr("text-anchor", "middle")
             .text("Air Quality Index in Beijing, China");
 
+    // silder update function 
+    function update(h, t) {
+        handle.attr("cx", x(h));
+        sliderLabel.attr("x", x(h))
+                    .text(formatDateDisplay(h));
+        drawmap(formatDate(h));
+        drawhist(h);
+        console.log(now_t);
+
+        drawpoint(formatDate(h), now_t);
+    }
+
     // draw histrogram
     // ref:https://bl.ocks.org/d3noob/96b74d0bd6d11427dd797892551a103c
-    // https://bl.ocks.org/officeofjane/f132634f67b114815ba686484f9f7a77
+    // ref:https://bl.ocks.org/officeofjane/f132634f67b114815ba686484f9f7a77
 
     function drawhist(h) {
 
+        var histHeight = 0.31 * height;
+
         var histogram = d3.histogram()
-                            .value(function(d) { 
-                                return d.date; 
-                            })
+                            .value(function(d) { return d.date; })
                             .domain(x.domain())
                             .thresholds(x.ticks(d3.timeMonth));
 
         var hist = svg0.append("g")
-                        .attr("class", "histogram")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                            .attr("class", "histogram")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         var bins = histogram(daily).map(d => {
-                            return {...d, sum: d.reduce((acc,row) => acc + row.value, 0) || 0, 
-                                          cnt: d.reduce((acc,row) => acc + 1, 0) || 0};
-                          });
+                        return {...d, sum: d.reduce((acc,row) => acc + row.value, 0) || 0, 
+                                      cnt: d.reduce((acc,row) => acc + 1, 0) || 0};
+                        });
 
-        var histHeight = 0.31 * height;
         var y = d3.scaleLinear()
                         .range([histHeight, 0])
-                        .domain([0, d3.max(bins, function(d) {return (d.sum/d.cnt); })]);
+                        .domain([0, d3.max(bins, function(d) {
+                            return (d.sum/d.cnt); 
+                        })]);
 
         var bar = hist.selectAll(".bar")
                           .data(bins)
@@ -181,12 +186,12 @@ function myVis(beijing, daily, district, station, time) {
         bar.append("rect")
                 .attr("x", 1)
                 .attr("width", function(d) { 
-                    return x(d.x1) - x(d.x0) ; })
+                    return x(d.x1) - x(d.x0); })
                 .attr("height", function(d) { 
                     return histHeight - y(d.sum/d.cnt); })
                 .attr("fill", function(d) { 
                     // change color when selected
-                    if (formatDateDisplay(d.x0) === formatDateDisplay(+h)){
+                    if (formatDateDisplay(d.x0) === formatDateDisplay(+h)) {
                         return "#EC96A4";
                     } else {
                         return color(d.sum/d.cnt); 
@@ -200,15 +205,30 @@ function myVis(beijing, daily, district, station, time) {
                     div0.transition()
                         .duration(100)
                         .style("opacity", "0.8");
-                    div0.html(formatDateDisplay(d.x0) + "<br/>" 
-                        + "AQI:" + formatDecimal(d.sum/d.cnt))
+                    div0.html(
+                            formatDateDisplay(d.x0) + "<br/>" 
+                            + "AQI:" + formatDecimal(d.sum/d.cnt))
                         .style("left", (d3.event.pageX + 20) + "px" )
                         .style("top", (d3.event.pageY - 20) + "px");
                     })
+                .on("click", function(d){
+                    update(d.x0);
+                    d3.select(this)
+                        .style("stroke-width", "2px")
+                        .style("fill", "#A1BE95");
+                    div0.transition()
+                        .duration(100)
+                        .style("opacity", "0.8");
+                    div0.html(
+                            formatDateDisplay(d.x0) + "<br/>" 
+                            + "AQI:" + formatDecimal(d.sum/d.cnt))
+                        .style("left", (d3.event.pageX + 20) + "px" )
+                        .style("top", (d3.event.pageY - 20) + "px");
+                })
                 .on("mouseout", function(d) {
                     d3.select(this)
                         .style("stroke-width", "0.5px")
-                        .style("fill", function(d){
+                        .style("fill", function(d) {
                            return color(d.sum/d.cnt)
                         });
                     div0.transition()
@@ -216,14 +236,14 @@ function myVis(beijing, daily, district, station, time) {
                         .style("opacity", 0);
                 });
 
-        // draw y axis
+        // draw axis and label
         var yAxisLeft = d3.axisLeft()
-                        .scale(y)
-                        .tickValues([50, 100, 150]);
+                            .scale(y)
+                            .tickValues([50, 100, 150]);
 
         var yAxisRight = d3.axisRight()
-                .scale(y)
-                .tickValues([50, 100, 150]);
+                            .scale(y)
+                            .tickValues([50, 100, 150]);
 
         svg0.append("g")
                 .attr("class", "axis")
@@ -236,30 +256,35 @@ function myVis(beijing, daily, district, station, time) {
                 .call(yAxisRight);
 
         svg0.append("text")
-            .attr("x", 20)
-            .attr("y", 75)
-            .attr("class", "label")
-            .text("Monthly AQI");
+                .attr("x", 20)
+                .attr("y", 75)
+                .attr("class", "label")
+                .text("Monthly AQI");
+
+        svg0.append("text")
+                .attr("x", width - 20)
+                .attr("y", 75)
+                .attr("class", "label")
+                .text("Monthly AQI");
     }
 
 
     var svg1 = d3.select("body")
                     .append("svg")
-                    .attr("width", width + margin.left + margin.right)
+                    .attr("width", width/2 + 200)
                     .attr("height", height)
-                    .attr("transform", "translate(" + 0 + "," + (-80    ) + ")")
-                    .attr("id","id_1");;
+                    .attr("transform", "translate(" + 0 + "," + (-80) + ")");
 
     // add legends
     function addlegend() {
 
         var legendVals = ["Daily AQI Range",  
-                            "0-50", "50-150", "150-250", "250-500", ">500",
+                            "Good", "Moderate", "Unhealthy", "Very Unhealthy", "Hazardous",
                             "Observation Station"];
 
         var legendCols = ["#FFFFFF", 
                             "#f1eef6", "#bdc9e1", "#74a9cf", "#0570b0", "#005073",
-                            "#EC96A4"];
+                            "#F2C057"];
 
         var legend = svg1.selectAll(".legend")
                             .data(legendVals)
@@ -271,8 +296,8 @@ function myVis(beijing, daily, district, station, time) {
                             });
         
         legend.append("rect")
-                .attr("x", margin.left * 6)
-                .attr("y", margin.top  * 1.5)
+                .attr("x", margin.left * 2)
+                .attr("y", margin.top  * 2)
                 .attr("width", 10)
                 .attr("height", 10)
                 .style("fill", function (d, i) {
@@ -280,13 +305,14 @@ function myVis(beijing, daily, district, station, time) {
                 });
         
         legend.append("text")
-                .attr("x", margin.left * 7)
-                .attr("y", margin.top  * 1.5 + 9)
+                .attr("x", margin.left * 3)
+                .attr("y", margin.top  * 2 + 9)
                 .text(function (d, i) {
                     return d
                 })
                 .attr("class", "legend");
     }
+
 
     // prep for drawmap function
     var rScale = d3.scaleLinear()
@@ -298,7 +324,7 @@ function myVis(beijing, daily, district, station, time) {
     var projection = d3.geoMercator()
                         .center([116, 39])
                         .scale([10000])
-                        .translate([width/2 - 50, height/2 + 250])
+                        .translate([width/2 - 220, height/2 + 250])
                         .precision([.1]);
 
     var path = d3.geoPath()
@@ -308,12 +334,10 @@ function myVis(beijing, daily, district, station, time) {
                     .append("div")
                     .attr("class", "tooltip1")
                     .style("opacity", 0);
-
-
-    function drawmap(h, show) {
-        // if (show === false) {
-        //     svg1.attr("opacity", 0);
-        // }
+    
+    // draw the main map
+    // ref: https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
+    function drawmap(h) {
 
         var subset = district.filter((row) => row.date === +h);
         
@@ -342,7 +366,6 @@ function myVis(beijing, daily, district, station, time) {
 
         exit0.remove();
 
-        // ref: https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
         update0.merge(enter0)
                 .attr("d", path)
                 .attr("class", "map")
@@ -361,8 +384,16 @@ function myVis(beijing, daily, district, station, time) {
                     div1.html("Date:" + h + "<br/>"
                                 + "District: " + d.properties.abb + "<br/>"
                                 + "AQI: "+ d.properties.value)
-                        .style("left", (d3.event.pageX + 30) + "px")
-                        .style("top", (d3.event.pageY - 30) + "px");
+                        .style("left", (d3.event.pageX + 20) + "px")
+                        .style("top", (d3.event.pageY - 20) + "px");
+
+                    now_t = d.properties.abb;
+                    // console.log(now_t);
+                    drawpoint(h, d.properties.abb);
+                })
+                .on("click", function(d) {
+                    now_t = d.properties.abb;
+                    drawpoint(h, d.properties.abb);
                 })
                 .on("mouseleave", function(d) {
                     d3.select(this)
@@ -410,8 +441,8 @@ function myVis(beijing, daily, district, station, time) {
                     div1.html("Date:" + d.date + "<br/>"
                                 + "District: " + d.district + "<br/>"
                                 + "AQI: "+ d.value)
-                        .style("left", (d3.event.pageX + 30) + "px")
-                        .style("top", (d3.event.pageY - 30) + "px");
+                        .style("left", (d3.event.pageX + 20) + "px")
+                        .style("top", (d3.event.pageY - 20) + "px");
                 })
                 .on("mouseout", function(d){
                     d3.select(this)
@@ -419,23 +450,203 @@ function myVis(beijing, daily, district, station, time) {
                             return rScale(d.value);
                         })
                         .style("stroke", "none")
-                        .style("fill", "#EC96A4");
+                        .style("fill", "#F2C057");
                     div1.transition()
                         .duration(100)
                         .style("opacity", 0);
-                });     
+                });    
     }
 
 
-    // silder update function 
-    function update(h) {
-        handle.attr("cx", x(h));
-        sliderLabel.attr("x", x(h))
-                    .text(formatDateDisplay(h));
-        drawmap(formatDate(h), true);
-        drawhist(h);
+
+    var div2 = d3.select("body")
+                    .append("div")
+                    .attr("class", "tooltip0")
+                    .style("opacity", 0);
+
+    var nameMap = {"syq": "ShunYi District(syq)", "pgq": "PingGu District(pgq)", 
+                    "myx": "MingYun District(myx)", "hrq": "HaiRou District(hrq)", 
+                    "yqx": "YanQing District(yqx)", "cpq": "ChangPing District(cpq)",
+                    "hdq": "HaiDian District(hdq)", "sjsq": "ShiJingShan District(sjsq)",
+                    "xcq": "XiCheng District(xcq)", "dcq": "DongCheng District(dcq)",
+                    "cyq": "ChaoYang District(cyq)", "ftq": "FengTai District(ftq)",
+                    "mtgq": "MenTouGou District(mtgq)", "fsq": "FangShan District(fsq)",
+                    "dxq": "DaXing District(dxq)", "tzq":"TongZhou District(tzq)" }
+
+
+    var svg2 = d3.select("body")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .attr("transform", "translate(" + (width/2 + 60)+ "," + (-550) + ")");
+    
+    // ref:http://bl.ocks.org/hopelessoptimism/5d558563599aea1bfab93089a4036c22
+    function drawpoint(h, t) {
+
+        svg2.selectAll("*").remove();
+
+        var subset = districtReady.filter((row) => row.district === t);
+
+        var xScale = d3.scaleTime()
+                        .domain([
+                                d3.min(subset, function(d) { return d.date; }), 
+                                d3.max(subset, function(d) { return d.date; })])
+                        .range([margin.left, width/2 - margin.right - margin.left])
+                        .clamp(true);
+
+        var yScale = d3.scaleLinear()
+                        .domain([
+                                d3.min(subset, function(d) { return d.value; }), 
+                                d3.max(subset, function(d) { return d.value;} )])
+                        .range([height - margin.bottom, margin.top]);
+
+        var xAxis = d3.axisBottom()
+                        .scale(xScale)
+                        .ticks(5);
+
+        var yAxis = d3.axisRight()
+                        .scale(yScale)
+                        .ticks(5);
+
+        // draw axis
+        svg2.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + (0) + ", " + (height - margin.bottom * 2)  + ")")
+                .call(xAxis);
+
+        svg2.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + (width /2 - margin.left * 2) + ", "  + (-margin.bottom)  + ")")
+                .call(yAxis);
+
+        // add title and axis label
+        svg2.append("text")
+                .attr("x", width/7)
+                .attr("y", margin.top / 4)
+                .attr("class", "subtitle")
+                .text(nameMap[t]);
+
+        svg2.append("text")
+                .attr("x", width/2 - margin.left * 2.5)
+                .attr("y", 22)
+                .attr("class", "label")
+                .text("Daily AQI");
+
+        // add points
+        var update2 = svg2.selectAll("circle")
+                             .data(subset);
+
+        var enter2 = update2.enter()
+                             .append("circle");
+
+        var exit2 = update2.exit();
+
+        exit2.remove();
+
+        update2.merge(enter2)
+                .attr("cx", function(d) {
+                    return xScale(d.date);
+                    })
+                .attr("cy", function(d) {
+                    return yScale(d.value);
+                    })
+                .attr("r", function(d) {
+                    if (formatDate(d.date) === h) {
+                        return 8;
+                    } else {
+                        return 1.2;
+                    }})
+                .style("fill", function(d) {
+                    if (formatDate(d.date) === h) {
+                        return "#EC96A4";
+                    } else {
+                        return "#D3D3D3";
+                    }})
+                .style("stroke", function(d) {
+                    if (formatDate(d.date) === h){
+                        return "#929292";
+                    } else {
+                        return "none";
+                    }})
+                .attr("transform", "translate(" + (0) + ", "  + (-margin.bottom) + ")")
+                .on("mouseover", function(d) {
+                    d3.select(this)
+                        .attr("r", 8)
+                        .style("stroke", "#929292")
+                        .style("fill", "#A1BE95");
+                    div2.transition()
+                        .duration(100)
+                        .style("opacity", 0.8);
+                    div2.html("Date:" + formatDate(d.date) + "<br/>"
+                                + "AQI: "+ formatDecimal(d.value))
+                        .style("left", (width - margin.left * 3.5) + "px")
+                        .style("top", (300) + "px");
+                })
+                .on("click", function(d) {
+                    update(d.date);          
+                    d3.select(this)
+                        .attr("r", 8)
+                        .style("stroke", "#929292")
+                        .style("fill", "#A1BE95");
+                    div2.transition()
+                        .duration(100)
+                        .style("opacity", 0.8);
+                    div2.html("Date:" + formatDate(d.date) + "<br/>"
+                                + "AQI: "+ formatDecimal(d.value))
+                        .style("left", (width - margin.left * 3.5) + "px")
+                        .style("top", (300) + "px");
+                })
+                .on("mouseout", function(d){
+                    d3.select(this)
+                        .attr("r", 1.2)
+                        .style("stroke", "none")
+                        .style("fill", "#D3D3D3");
+                    div2.transition()
+                        .duration(100)
+                        .style("opacity", 0);
+                })
+    
     }
 
+
+    // initialize everything
+    addlegend(); 
+    drawhist(startDate);
+    drawmap(formatDate(startDate))
+    drawpoint(formatDate(startDate), "cyq");
+
+    var playButton = d3.select("body")
+                        .append("button")
+                        .text("Play")
+                        .attr("class", "button")
+                        .on("click", function(){
+                            var button = d3.select(this);
+                            if (button.text() === "Play") {
+                                d3.select(this)
+                                    .style("background-color", "#ccc")
+                                    .text("Return");         
+                            } else {
+                                d3.select(this)
+                                    .style("background-color", "#EC96A4")
+                                    .text("Play");
+                            }
+                        });
+
+               //  // add data sourcing
+               //  svg.append("text")
+               //      .attr("x", width - margin.right * 8)
+               //      .attr("y", height - margin.bottom / 5)
+               //      .attr("class", "source")
+               //      .text("Peking University Open Research Data Platform");
+
+
+    // var counter = 0
+
+    // time.forEach(function(d) {
+    //     d.date = parser(d.date);
+    //     // d.id = counter;
+    //     // counter += 1;
+    // });
 
     // var yScale = d3.scaleTime()
     //                 .domain([
@@ -448,108 +659,147 @@ function myVis(beijing, daily, district, station, time) {
     //                 .scale(yScale)
     //                 .ticks(5);
 
-    var svg2 = d3.select("body")
-                    .append("svg")
-                    .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
-                    .attr("transform", "translate(" + 0 + "," + (-550) + ")")
-                    .attr("id","id_2");
+    // var svg2 = d3.select("body")
+    //                 .append("svg")
+    //                 .attr("width", width + margin.left + margin.right)
+    //                 .attr("height", height + margin.top + margin.bottom)
+    //                 .attr("transform", "translate(" + 0 + "," + (-600) + ")")
+    //                 .attr("id","id_2");
 
-    function drawrunning(show) {
+    // function drawrunning() {
 
-        var yScale = d3.scaleOrdinal()
-                            .domain(["good", "fair", "unhealthy", "dangerous"])
-                            .range([margin.left + 0.05 * width, margin.left + 0.3 * width, 
-                                    margin.left + 0.55 * width, margin.left + 0.8 * width]);
+    //     var yScale = d3.scaleOrdinal()
+    //                         .domain(["good", "fair", "unhealthy", "dangerous"])
+    //                         .range([margin.left + 0.05 * width, margin.left + 0.3 * width, 
+    //                                 margin.left + 0.55 * width, margin.left + 0.8 * width]);
 
 
-        var yAxis = d3.axisBottom()
-                        .scale(yScale)
-                        .tickValues(["good", "fair", "unhealthy", "dangerous"]);
+    //     var yAxis = d3.axisBottom()
+    //                     .scale(yScale)
+    //                     .tickValues(["good", "fair", "unhealthy", "dangerous"]);
 
-        var y = svg2.append("g")
-                        .attr("class", "axis")
-                        .attr("transform", "translate(" + 0 + "," + 300 + ")")
-                        .call(yAxis);
+    //     var y = svg2.append("g")
+    //                     .attr("class", "axis")
+    //                     .attr("transform", "translate(" + 0 + "," + 100 + ")")
+    //                     .call(yAxis);
+    //                                 // .append("text")
+    //                                 // .attr("x", 100)
+    //                                 // // .attr("y", 20)
+    //                                 // // .attr("text-anchor", "middle")
+    //                                 // .attr("class", "label")
+    //                                 // .style("text-anchor", "middle");
 
-        allCircles = svg2.selectAll("circle")
-                            .data(time)
-                            .enter()
-                            .append("circle")
-                            .attr("cx", function(d) {
-                                return (margin.left + x(d.date));
-                            })
-                            .attr("cy", 10)
-                            .attr("r", 5)
-                            .attr("class", "circle")
-                            .each(running);
+    //     // var yLabel = y.append("text")
+    //     //                     .attr("class", "label")
+    //     //                     .attr("text-anchor", "middle")
+    //     //                     .text(formatDateDisplay(startDate))
+    //     //                     .attr("transform", "translate(" + 0 + "," + (15) + ")");
 
-        // ref: https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763
-        function running (d, i) {
+    //     var div2 = d3.select("body")
+    //                     .append("div")
+    //                     .attr("class", "tooltip0")
+    //                     .style("opacity", 0);
 
-            d3.select(this)
-                .transition()
-                .delay(i * 1)
-                .duration(200)
-                .ease(d3.easeElasticOut)
-                .attr("cy", 10)
-                .attr("cx", function(d) {
-                    return (margin.left + x(d.date));
-                    })
-                .attr("r", 5)
-                .attr("class", "circle")
-                .text(function(d) {
-                        return d.date
-                    })
-                .transition()
-                    .ease(d3.easeLinear)
-                    .duration(1000)
-                    .attr("cx", function(d) {
-                        if (d.category === "good"){ return yScale.range()[0] + i * 0.1 }
-                        if (d.category === "fair"){ return yScale.range()[1] + i * 0.1}
-                        if (d.category === "unhealthy"){ return yScale.range()[2] + i * 0.1 }
-                        if (d.category === "dangerous"){ return yScale.range()[3] + i * 0.1 }
-                        else { return yScale.range()[0] + i * 0.1 }
-                    })
-                    .attr("cy", 300)
-                    .style("fill", function(d) {
-                        if (d.category === "good"){ return "#486824" }
-                        if (d.category === "fair"){ return "#F2C057" }
-                        if (d.category === "unhealthy"){ return "#D13525" }
-                        if (d.category === "dangerous"){ return "#4C3F54" }
-                        else { return "#486824" }
-                    });
-            }
-    }
+    //     function getAllIndexes(arr, val) {
+    //         var indexes = [], i;
+    //         for(i = 0; i < arr.length; i++)
+    //             if (arr[i].category === val)
+    //                 indexes.push(i);
+    //         return indexes;
+    //     }
 
-    // initialize everything
-    // addlegend(); 
-    // drawmap(formatDate(startDate), true);
-    drawhist(startDate);
+    //     var fairIndex = getAllIndexes(time, "fair");
+    //     console.log(fairIndex);
 
-    var playButton = d3.select("body")
-                            .append("button")
-                            .text("Play")
-                            .attr("class", "button")
-                            .on("click", function(){
-                                var button = d3.select(this);
-                                if (button.text() === "Play") {
-                                    d3.select(this)
-                                        .style("background-color", "#ccc")
-                                        .text("Return");   
-                                    // d3.select("#id_1").remove();          
-                                    // drawmap(formatDate(startDate), false);
-                                    drawrunning(true);
-                                } else {
-                                    d3.select(this)
-                                        .style("background-color", "#EC96A4")
-                                        .text("None");
-                                    d3.select("#id_2").remove(); 
-                                    // drawrunning(false);
-                                    addlegend(); 
-                                    drawmap(formatDate(startDate), true);
-                                    
-                                }
-                            });
+
+    //     allCircles = svg2.selectAll("circle")
+    //                         .data(time)
+    //                         .enter()
+    //                         .append("circle")
+    //                         .attr("cx", function(d) {
+    //                             return (margin.left + x(d.date));
+    //                         })
+    //                         .attr("cy", 10)
+    //                         .attr("r", 5)
+    //                         .attr("class", "circle")
+    //                         .on("mouseover", function(d) {
+    //                             d3.select(this)
+    //                                 .style("stroke-width", "2px")
+    //                                 .style("fill", "#A1BE95");
+    //                             div2.transition()
+    //                                 .duration(100)
+    //                                 .style("opacity", "0.8");
+    //                             div2.html("Date:" + formatDate(d.date) + "<br/>" 
+    //                                         + "AQI:" + formatDecimal(d.value))
+    //                                 .style("left", (d3.event.pageX + 20) + "px" )
+    //                                 .style("top", (d3.event.pageY - 20) + "px");
+    //                             })
+    //                         .on("mouseout", function(d) {
+    //                             d3.select(this)
+    //                                 .style("stroke-width", "0.5px")
+    //                                 .style("fill", function(d) {
+    //                                    return changeColor(d);
+    //                                 });
+    //                             div2.transition()
+    //                                 .duration(100)
+    //                                 .style("opacity", 0);
+    //                         })
+    //                         .each(running);
+
+    //     function changeColor(d) {
+    //         if (d.category === "good") { 
+    //             return "#486824" }
+    //         if (d.category === "fair") { 
+    //             return "#F2C057" }
+    //         if (d.category === "unhealthy") { 
+    //             return "#D13525" }
+    //         if (d.category === "dangerous") { 
+    //             return "#4C3F54" }
+    //         else { 
+    //             return "#486824" }
+    //     }
+
+    //     // ref: https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763
+    //     function running (d, i) {
+
+    //         d3.select(this)
+    //             .transition()
+    //             .delay(i * 1)
+    //             .duration(200)
+    //             .ease(d3.easeElasticOut)
+    //             .attr("cx", function(d) {
+    //                 return (margin.left + x(d.date));
+    //                 })
+    //             .attr("cy", 10)
+    //             .attr("r", 5)
+    //             .attr("class", "circle")
+    //             .transition()
+    //                 .ease(d3.easeLinear)
+    //                 .duration(200)
+    //                 .attr("cx", function(d) {
+    //                     if (d.category === "good") { 
+    //                         return yScale.range()[0] + i * 0.1 }
+    //                     if (d.category === "fair") { 
+    //                         return yScale.range()[1] + i * 0.1 }
+    //                     if (d.category === "unhealthy") {
+    //                         return yScale.range()[2] + i * 0.1 }
+    //                     if (d.category === "dangerous") { 
+    //                         return yScale.range()[3] + i * 0.1 }
+    //                     else { 
+    //                         return yScale.range()[0] + i * 0.1 }
+    //                 })
+    //                 .attr("cy", 100)
+    //                 .style("fill", function(d) {
+    //                     return changeColor(d);
+    //                 })
+    //                 .end()
+    //                 .then(_ => {
+    //                     console.log('HI!', d)
+    //                     //d3 select corresponding counter,
+    //                     // get the text value from it, 
+    //                     // increment that value
+    //                 });
+    //         }
+    // }
 
 }

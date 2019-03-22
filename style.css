@@ -29,12 +29,14 @@
       }
 
       .circleStation {
-          fill: #EC96A4;                
+          fill: #F2C057;
+          opacity: 0.9;                
       }
 
-      .circle {
-          fill: #EC96A4;             
-      }
+/*      .circle {
+          fill: #696969;  
+          opacity: 0.3;           
+      }*/
 
       .title {
           font-family: Georgia;
@@ -45,7 +47,7 @@
 
       .subtitle {
           font-family: Georgia;
-          font-size: 14px;
+          font-size: 18px;
           fill: #696969;
       }
 
@@ -118,14 +120,14 @@
           background: #FFFFFF;
           border-width: 0.5px;
           border-style: solid;
-          border-color: #000000;
+          border-color: #929292;
           pointer-events: none;
         }
 
       div.tooltip1 {
           position: absolute;
           text-align: center;
-          width: 120px;
+          width: 110px;
           height: 50px;
           padding: 2px;
           font-family: Georgia;
@@ -134,7 +136,7 @@
           background: #FFFFFF;
           border-width: 0.5px;
           border-style: solid;
-          border-color: #000000;
+          border-color: #929292;
           pointer-events: none;
         }
 
@@ -158,5 +160,5 @@
       button:hover {
           background-color: #696969;
       }   
-
+      
 </style>
