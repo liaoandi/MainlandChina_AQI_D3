@@ -48,14 +48,23 @@
       .subtitle {
           font-family: Georgia;
           font-size: 18px;
+          font-weight: bold;
           fill: #696969;
       }
 
-      .source{
+      .footnote {
+          font-family: Georgia;
+          font-size: 14px;
+          font-weight: bold;
+          fill: #696969;
+      }
+
+      .source {
           font-family: Georgia;
           font-size: 12px;
-          fill: #929292;
+          fill: #696969;
       }
+
 
       .label {
           font-family: Georgia;

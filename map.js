@@ -20,7 +20,7 @@ Promise.all(files.map(url => d3.json(url))).then(function(data) {
 
 function myVis(beijing, daily, district, districtReady, station, time) {
 
-    var margin = {top: 80, bottom: 50, left: 30, right: 30}
+    var margin = {top: 80, bottom: 30, left: 30, right: 30};
     var width = 1200 - margin.left - margin.right;
     var height = 600 - margin.top - margin.bottom;
     var padding = 20;
@@ -33,7 +33,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
     var formatDecimal = d3.format(".2f");
     var parser = d3.timeParse("%Y%m%d");
 
-    // modify date
+    // modify date for use
     daily.forEach(function(d) {
         d.date = parser(d.date);
     });
@@ -42,11 +42,11 @@ function myVis(beijing, daily, district, districtReady, station, time) {
         d.date = parser(d.date);
     });
 
-    var now_t = "cyq";
 
+    // set up for slider
     var color = d3.scaleQuantize()
                     .domain([50, 200])
-                    .range(["#f1eef6", "#bdc9e1", "#74a9cf", "#0570b0", "#005073"]);
+                    .range(["#F1EEF6", "#BDC9E1", "#74A9CF", "#0570B0", "#005073"]);
 
     var x = d3.scaleTime()
                 .domain([startDate, endDate])
@@ -58,10 +58,10 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height /2 + margin.top + margin.bottom)
                     .attr("transform", "translate(" + 0 + "," + 0 + ")");
-        
+  
+
     // ---begin draw slider---
     // ref: https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763
-    // https://bl.ocks.org/officeofjane/f132634f67b114815ba686484f9f7a77
 
     // draw ticks 
     var sliderAxis = d3.axisBottom()
@@ -70,14 +70,14 @@ function myVis(beijing, daily, district, districtReady, station, time) {
 
     svg0.append("g")
             .attr("class", "slideraxis")
-            .attr("transform", "translate(" + margin.left + ", " + (0.5 * height)  + ")")
+            .attr("transform", "translate(" + margin.left + ", " + (0.55 * height)  + ")")
             .attr("id", "sliderAxis")
             .call(sliderAxis);
 
     // draw actual slider 
     var slider = svg0.append("g")
                         .attr("class", "slider")
-                        .attr("transform", "translate(" + margin.left + "," + (0.5 * height) + ")");
+                        .attr("transform", "translate(" + margin.left + "," + (0.55 * height) + ")");
 
     slider.append("line")
             .attr("class", "track")
@@ -93,7 +93,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
             .attr("class", "track-overlay")
             .call(d3.drag()
                 .on("start.interrupt", function() { slider.interrupt(); })
-                .on("start drag", function() { update(x.invert(d3.event.x)); }));
+                .on("start drag", function() { update(x.invert(d3.event.x), now_t); }));
 
     slider.insert("g", ".track-overlay")
             .attr("transform", "translate(" + 100 + "," + 15 + ")")
@@ -102,7 +102,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
             .enter()
             .append("text")
             .attr("x", x)
-            .attr("y", 10)
+            .attr("y", 0)
             .attr("text-anchor", "middle")
             .attr("class", "label")
             .text(function(d) { 
@@ -119,10 +119,11 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                                 .attr("class", "label")
                                 .attr("text-anchor", "middle")
                                 .text(formatDateDisplay(startDate))
-                                .attr("transform", "translate(" + 0 + "," + (15) + ")");
+                                .attr("transform", "translate(" + 0 + "," + (25) + ")");
     // ---end drawing slider---
 
-    // add title
+
+    // add title and author
     svg0.append("text")
             .attr("x", width/2)
             .attr("y", margin.top/2)
@@ -130,45 +131,85 @@ function myVis(beijing, daily, district, districtReady, station, time) {
             .attr("text-anchor", "middle")
             .text("Air Quality Index in Beijing, China");
 
-    // silder update function 
+    svg0.append("text")
+        .attr("x", width/2)
+        .attr("y", 0.8 * margin.top)
+        .attr("class", "source")
+        .attr("text-anchor", "middle")
+        .text("Andi Liao");
+
+
+    // set up for hist
+    var histHeight = 0.31 * height;
+
+    var histogram = d3.histogram()
+                        .value(function(d) { return d.date; })
+                        .domain(x.domain())
+                        .thresholds(x.ticks(d3.timeMonth));
+
+    var hist = svg0.append("g")
+                        .attr("class", "histogram")
+                        .attr("transform", "translate(" + margin.left + "," + margin.top * 1.25 + ")");
+
+    var bins = histogram(daily).map(d => {
+                    return {...d, sum: d.reduce((acc,row) => acc + row.value, 0) || 0, 
+                                  cnt: d.reduce((acc,row) => acc + 1, 0) || 0};
+                    });
+
+    var y = d3.scaleLinear()
+                    .range([histHeight, 0])
+                    .domain([0, d3.max(bins, function(d) {
+                        return (d.sum/d.cnt); 
+                    })]);
+
+    // draw axis and label
+    var yAxisLeft = d3.axisLeft()
+                        .scale(y)
+                        .tickValues([50, 100, 150]);
+
+    var yAxisRight = d3.axisRight()
+                        .scale(y)
+                        .tickValues([50, 100, 150]);
+
+    svg0.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + margin.left * 2 + ", " + margin.top * 1.25  + ")")
+            .call(yAxisLeft);
+
+    svg0.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(" + width + ", " + margin.top * 1.25 + ")")
+            .call(yAxisRight);
+
+    svg0.append("text")
+            .attr("x", 20)
+            .attr("y", 95)
+            .attr("class", "label")
+            .text("Monthly AQI");
+
+    svg0.append("text")
+            .attr("x", width - 20)
+            .attr("y", 95)
+            .attr("class", "label")
+            .text("Monthly AQI");
+
+
+    // silder update everything function
+    var now_t = "cyq";
+
     function update(h, t) {
         handle.attr("cx", x(h));
         sliderLabel.attr("x", x(h))
                     .text(formatDateDisplay(h));
         drawmap(formatDate(h));
         drawhist(h);
-        console.log(now_t);
-
         drawpoint(formatDate(h), now_t);
-    }
+    };
+
 
     // draw histrogram
     // ref:https://bl.ocks.org/d3noob/96b74d0bd6d11427dd797892551a103c
-    // ref:https://bl.ocks.org/officeofjane/f132634f67b114815ba686484f9f7a77
-
     function drawhist(h) {
-
-        var histHeight = 0.31 * height;
-
-        var histogram = d3.histogram()
-                            .value(function(d) { return d.date; })
-                            .domain(x.domain())
-                            .thresholds(x.ticks(d3.timeMonth));
-
-        var hist = svg0.append("g")
-                            .attr("class", "histogram")
-                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        var bins = histogram(daily).map(d => {
-                        return {...d, sum: d.reduce((acc,row) => acc + row.value, 0) || 0, 
-                                      cnt: d.reduce((acc,row) => acc + 1, 0) || 0};
-                        });
-
-        var y = d3.scaleLinear()
-                        .range([histHeight, 0])
-                        .domain([0, d3.max(bins, function(d) {
-                            return (d.sum/d.cnt); 
-                        })]);
 
         var bar = hist.selectAll(".bar")
                           .data(bins)
@@ -190,7 +231,6 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                 .attr("height", function(d) { 
                     return histHeight - y(d.sum/d.cnt); })
                 .attr("fill", function(d) { 
-                    // change color when selected
                     if (formatDateDisplay(d.x0) === formatDateDisplay(+h)) {
                         return "#EC96A4";
                     } else {
@@ -235,56 +275,27 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                         .duration(100)
                         .style("opacity", 0);
                 });
-
-        // draw axis and label
-        var yAxisLeft = d3.axisLeft()
-                            .scale(y)
-                            .tickValues([50, 100, 150]);
-
-        var yAxisRight = d3.axisRight()
-                            .scale(y)
-                            .tickValues([50, 100, 150]);
-
-        svg0.append("g")
-                .attr("class", "axis")
-                .attr("transform", "translate(" + margin.left * 2 + ", " + margin.top  + ")")
-                .call(yAxisLeft);
-
-        svg0.append("g")
-                .attr("class", "axis")
-                .attr("transform", "translate(" + width + ", " + margin.top  + ")")
-                .call(yAxisRight);
-
-        svg0.append("text")
-                .attr("x", 20)
-                .attr("y", 75)
-                .attr("class", "label")
-                .text("Monthly AQI");
-
-        svg0.append("text")
-                .attr("x", width - 20)
-                .attr("y", 75)
-                .attr("class", "label")
-                .text("Monthly AQI");
-    }
+    };
 
 
     var svg1 = d3.select("body")
                     .append("svg")
                     .attr("width", width/2 + 200)
-                    .attr("height", height)
-                    .attr("transform", "translate(" + 0 + "," + (-80) + ")");
+                    .attr("height", height * 1.2)
+                    .attr("transform", "translate(" + 0 + "," + (-20) + ")");
 
     // add legends
     function addlegend() {
 
-        var legendVals = ["Daily AQI Range",  
-                            "Good", "Moderate", "Unhealthy", "Very Unhealthy", "Hazardous",
-                            "Observation Station"];
+        var legendVals = ["Color Encoding",
+                            "System Selection", "User Selection", "Observation Station",
+                            "", "", "Daily AQI Range",  
+                            "Good", "Moderate", "Unhealthy", "Very Unhealthy", "Hazardous"];
 
-        var legendCols = ["#FFFFFF", 
-                            "#f1eef6", "#bdc9e1", "#74a9cf", "#0570b0", "#005073",
-                            "#F2C057"];
+        var legendCols = ["#FFFFFF",
+                            "#EC96A4", "#A1BE95","#F2C057",
+                            "#FFFFFF", "#FFFFFF", "#FFFFFF", 
+                            "#F1EEF6", "#BDC9E1", "#74A9CF", "#0570B0", "#005073"];
 
         var legend = svg1.selectAll(".legend")
                             .data(legendVals)
@@ -292,29 +303,50 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                             .append("g")
                             .attr("class", "legend")
                             .attr("transform", function (d, i) {
-                                return "translate(0," + i * 25 + ")"
+                                return "translate(0," + i * 20 + ")"
                             });
         
         legend.append("rect")
                 .attr("x", margin.left * 2)
-                .attr("y", margin.top  * 2)
+                .attr("y", margin.top * 1.2 )
                 .attr("width", 10)
                 .attr("height", 10)
-                .style("fill", function (d, i) {
+                .style("fill", function(d, i) {
                     return legendCols[i]
+                })
+                .style("rx", function (d) {
+                    if (d === "Observation Station") {
+                        return 10
+                    } else {
+                        return 0
+                    }
+                })
+                .style("ry", function (d) {
+                    if (d === "Observation Station") {
+                        return 10
+                    } else {
+                        return 0
+                    }
                 });
         
         legend.append("text")
                 .attr("x", margin.left * 3)
-                .attr("y", margin.top  * 2 + 9)
-                .text(function (d, i) {
+                .attr("y", margin.top * 1.2 + 9)
+                .text(function(d, i) {
                     return d
                 })
                 .attr("class", "legend");
-    }
+
+        // add title and axis label
+        svg1.append("text")
+                .attr("x", width/3)
+                .attr("y", 15)
+                .attr("class", "subtitle")
+                .text("Beijing City");
+    };
 
 
-    // prep for drawmap function
+    // set up for map
     var rScale = d3.scaleLinear()
                     .domain([ 
                             d3.min(station, function(d) { return d.value; }),
@@ -324,7 +356,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
     var projection = d3.geoMercator()
                         .center([116, 39])
                         .scale([10000])
-                        .translate([width/2 - 220, height/2 + 250])
+                        .translate([width/2 - 230, height/2 + 260])
                         .precision([.1]);
 
     var path = d3.geoPath()
@@ -335,6 +367,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                     .attr("class", "tooltip1")
                     .style("opacity", 0);
     
+
     // draw the main map
     // ref: https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html
     function drawmap(h) {
@@ -347,12 +380,12 @@ function myVis(beijing, daily, district, districtReady, station, time) {
             var dataDistrict = subset[i].district;
             var dataValue = subset[i].value;
             mapMap[dataDistrict] = dataValue;
-        }
+        };
 
         for (var j = 0; j < beijing.features.length; j ++ ) {
             var jsonDistrict = beijing.features[j].properties.abb;
             beijing.features[j].properties.value = mapMap[jsonDistrict]; 
-        }
+        };
 
         // district part
         var update0 = svg1.selectAll("path")
@@ -362,7 +395,6 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                             .append("path");
 
         var exit0 = update0.exit();
-
 
         exit0.remove();
 
@@ -386,9 +418,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                                 + "AQI: "+ d.properties.value)
                         .style("left", (d3.event.pageX + 20) + "px")
                         .style("top", (d3.event.pageY - 20) + "px");
-
                     now_t = d.properties.abb;
-                    // console.log(now_t);
                     drawpoint(h, d.properties.abb);
                 })
                 .on("click", function(d) {
@@ -455,31 +485,31 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                         .duration(100)
                         .style("opacity", 0);
                 });    
-    }
+    };
 
 
-
+    // set up for scatterplot
     var div2 = d3.select("body")
                     .append("div")
                     .attr("class", "tooltip0")
                     .style("opacity", 0);
 
     var nameMap = {"syq": "ShunYi District(syq)", "pgq": "PingGu District(pgq)", 
-                    "myx": "MingYun District(myx)", "hrq": "HaiRou District(hrq)", 
+                    "myx": "MingYun District(myx)", "hrq": "HuaiRou District(hrq)", 
                     "yqx": "YanQing District(yqx)", "cpq": "ChangPing District(cpq)",
                     "hdq": "HaiDian District(hdq)", "sjsq": "ShiJingShan District(sjsq)",
                     "xcq": "XiCheng District(xcq)", "dcq": "DongCheng District(dcq)",
                     "cyq": "ChaoYang District(cyq)", "ftq": "FengTai District(ftq)",
                     "mtgq": "MenTouGou District(mtgq)", "fsq": "FangShan District(fsq)",
-                    "dxq": "DaXing District(dxq)", "tzq":"TongZhou District(tzq)" }
-
+                    "dxq": "DaXing District(dxq)", "tzq":"TongZhou District(tzq)" };
 
     var svg2 = d3.select("body")
                     .append("svg")
                     .attr("width", width)
                     .attr("height", height + margin.top + margin.bottom)
-                    .attr("transform", "translate(" + (width/2 + 60)+ "," + (-550) + ")");
+                    .attr("transform", "translate(" + (width/2 + 60)+ "," + (-650) + ")");
     
+
     // ref:http://bl.ocks.org/hopelessoptimism/5d558563599aea1bfab93089a4036c22
     function drawpoint(h, t) {
 
@@ -498,7 +528,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                         .domain([
                                 d3.min(subset, function(d) { return d.value; }), 
                                 d3.max(subset, function(d) { return d.value;} )])
-                        .range([height - margin.bottom, margin.top]);
+                        .range([height - margin.bottom, margin.top * 1.5]);
 
         var xAxis = d3.axisBottom()
                         .scale(xScale)
@@ -522,13 +552,13 @@ function myVis(beijing, daily, district, districtReady, station, time) {
         // add title and axis label
         svg2.append("text")
                 .attr("x", width/7)
-                .attr("y", margin.top / 4)
+                .attr("y", 0.7 * margin.top)
                 .attr("class", "subtitle")
                 .text(nameMap[t]);
 
         svg2.append("text")
                 .attr("x", width/2 - margin.left * 2.5)
-                .attr("y", 22)
+                .attr("y", 85)
                 .attr("class", "label")
                 .text("Daily AQI");
 
@@ -580,7 +610,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                     div2.html("Date:" + formatDate(d.date) + "<br/>"
                                 + "AQI: "+ formatDecimal(d.value))
                         .style("left", (width - margin.left * 3.5) + "px")
-                        .style("top", (300) + "px");
+                        .style("top", (400) + "px");
                 })
                 .on("click", function(d) {
                     update(d.date);          
@@ -604,17 +634,34 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                     div2.transition()
                         .duration(100)
                         .style("opacity", 0);
-                })
-    
-    }
+                })  
+    };
 
 
     // initialize everything
     addlegend(); 
     drawhist(startDate);
     drawmap(formatDate(startDate))
-    drawpoint(formatDate(startDate), "cyq");
+    drawpoint(formatDate(startDate), now_t);
 
+    var currentValue = d3.timeDay.offset(startDate, +15)
+    var targetValue = endDate;
+
+
+    // https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763
+    function step() {
+          update(currentValue, now_t);
+          currentValue = d3.timeMonth.offset(currentValue, +1);
+
+          if (d3.timeDay.offset(currentValue, +15) > targetValue) {
+                playButton.text("Reset")
+                            .style("background-color", "#EC96A4");
+                currentValue = startDate;
+                clearInterval(timer);
+          }
+    }
+
+    // draw play button
     var playButton = d3.select("body")
                         .append("button")
                         .text("Play")
@@ -622,24 +669,67 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                         .on("click", function(){
                             var button = d3.select(this);
                             if (button.text() === "Play") {
-                                d3.select(this)
-                                    .style("background-color", "#ccc")
-                                    .text("Return");         
-                            } else {
-                                d3.select(this)
-                                    .style("background-color", "#EC96A4")
-                                    .text("Play");
+                                moving = true;
+                                timer = setInterval(step, 5);
+                                button.text("Wait")
+                                        .style("background-color", "#ccc");
                             }
-                        });
-
-               //  // add data sourcing
-               //  svg.append("text")
-               //      .attr("x", width - margin.right * 8)
-               //      .attr("y", height - margin.bottom / 5)
-               //      .attr("class", "source")
-               //      .text("Peking University Open Research Data Platform");
+                            if (button.text() === "Reset") {
+                                update(startDate, now_t);
+                                button.text("Play");
+                        }});
 
 
+    svg1.append("text")
+            .attr("x", margin.left * 2)
+            .attr("y", 440)
+            .attr("class", "footnote")
+            .text("Footnote: Please click the following texts!"); 
+
+    svg1.append("text")
+            .attr("x", margin.left * 2)
+            .attr("y", 460)
+            .attr("class", "source")
+            .text("All Data Source: National Urban Air Quality in Real-Time Publishing Platform")
+            .on("click", function() { 
+                window.open("http://beijingair.sinaapp.com/" ); 
+            }); 
+
+    svg1.append("text")
+            .attr("x", margin.left * 2)
+            .attr("y", 480)
+            .attr("class", "source")
+            .text("Github Code: MainlandChina_AQI_D3")
+            .on("click", function() { 
+                window.open("https://github.com/liaoandi/MainlandChina_AQI_D3" ); 
+            }); 
+
+    svg1.append("text")
+            .attr("x", margin.left * 2)
+            .attr("y", 500)
+            .attr("class", "source")
+            .text("Reference Code 1: Date Slider + Play Button")
+            .on("click", function() { 
+                window.open("https://bl.ocks.org/officeofjane/47d2b0bfeecfcb41d2212d06d095c763" ); 
+            }); 
+
+    svg1.append("text")
+        .attr("x", margin.left * 2)
+        .attr("y", 520)
+        .attr("class", "source")
+        .text("Reference Code 2: Link Chart")
+        .on("click", function() { 
+            window.open("http://bl.ocks.org/hopelessoptimism/5d558563599aea1bfab93089a4036c22" ); 
+        }); 
+
+    svg1.append("text")
+        .attr("x", margin.left * 2)
+        .attr("y", 540)
+        .attr("class", "source")
+        .text("Reference Code 3: Interactive Tooltip")
+        .on("click", function() { 
+            window.open("https://www.d3-graph-gallery.com/graph/interactivity_tooltip.html" ); 
+        }); 
     // var counter = 0
 
     // time.forEach(function(d) {
