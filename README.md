@@ -4,6 +4,18 @@ Link: https://liaoandi.github.io/MainlandChina_AQI_D3/
 
 Progress records & Questions:
 
+-- 20190322
+
+- Added the scatterplot.
+
+- Added the playbutton.
+
+- Link all graphs together.
+
+- Rearrange positions.
+
+--------Done!!!-------------
+
 -- 20190317
 
 - Added the histogram, together with tooltip and syncing with slider.
