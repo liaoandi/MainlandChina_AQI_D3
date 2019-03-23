@@ -507,7 +507,7 @@ function myVis(beijing, daily, district, districtReady, station, time) {
                     .append("svg")
                     .attr("width", width)
                     .attr("height", height + margin.top + margin.bottom)
-                    .attr("transform", "translate(" + (width/2 + 60)+ "," + (-650) + ")");
+                    .attr("transform", "translate(" + (width/2 + 60)+ "," + (-645) + ")");
     
 
     // ref:http://bl.ocks.org/hopelessoptimism/5d558563599aea1bfab93089a4036c22
